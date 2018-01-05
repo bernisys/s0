@@ -28,16 +28,22 @@ typedef struct {
   // power meter related values
   unsigned int pulses_per_kwh;  // translation factor pulses <-> kWh
 
+  // runtime values
   unsigned long int counter;
-  double power_last;
+  double energy;
   double time_last;
+  double period_last;
+  double power_last;
 } t_gpio_pin;
+
+
+
 
 t_gpio_pin gpio_pins[8];
 unsigned long int count_clobal = 0;
 
 
-double time_precision(void) {
+double time_get_precision(void) {
   struct timeval tv;
   gettimeofday(&tv, 0);
   volatile double tval = tv.tv_sec + ((double)(tv.tv_usec) / 1000000.0);
@@ -46,35 +52,43 @@ double time_precision(void) {
 
 
 void myInterrupt (void) {
-  double now = time_precision();
+  // retrieve current time for all operations iduring this IRQ
+  double now = time_get_precision();
   ++count_clobal;
 
-#ifdef DEBUGGING
+  #ifdef DEBUGGING
   printf("%f INT:", now);
-#endif
-  // check which GPIO pin triggered the interrupt (rising edge)
+  #endif
+
+  // check which GPIO pins triggered an interrupt on rising edge
   unsigned char gpio;
   for (gpio = 0; gpio < 8 ; gpio++) {
     t_gpio_pin *current = &gpio_pins[gpio];
     int state = digitalRead(current->wiringPi_number);
-#ifdef DEBUGGING
+    #ifdef DEBUGGING
     printf(" G.%d=%d", gpio, state); 
-#endif
+    #endif
     if ((state == 1) && (current->state_last == 0)) {
-      current->counter++;
-      double energy = 1.0 * current->counter / current->pulses_per_kwh;
-      double delta_time = (now - current->time_last);
-      current->power_last = 3600.0 / (delta_time * current->pulses_per_kwh);
-#ifdef DEBUGGING
-      printf("  E=%f  dT=%f  P=%f\n", energy, delta_time, current->power_last*1000);
-#endif
+      // update last timestamp
+      current->period_last = (now - current->time_last);
       current->time_last = now;
+
+      // update all readings
+      current->counter++;
+      current->energy = 1.0 * current->counter / current->pulses_per_kwh;
+      current->power_last = 3600.0 / (current->period_last * current->pulses_per_kwh);
+
+      #ifdef DEBUGGING
+      printf("  E=%f  dT=%f  P=%f\n", current->energy, current->period_last, current->power_last*1000);
+      #endif
     }
+/*
     else if (state == current->state_last) {
       double delta_time = (now - current->time_last);
       if (delta_time > 0.5)
         current->power_last = 3600.0 / (delta_time * current->pulses_per_kwh);
     }
+*/
     current->state_last = state;
   }
 #ifdef DEBUGGING
