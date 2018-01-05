@@ -1,0 +1,6 @@
+# install Prerequisites:
+git clone git://git.drogon.net/wiringPi
+cd wiringPi/
+./build
+gpio -v
+gpio readall
