@@ -20,6 +20,9 @@
 
 //#define DEBUGGING
 
+
+
+/*  specific datatypes  */
 typedef struct {
   // GPIO related values
   unsigned char wiringPi_number;
@@ -43,17 +46,13 @@ t_gpio_pin gpio_pins[8];
 unsigned long int count_clobal = 0;
 
 
-double time_get_precision(void) {
-  struct timeval tv;
-  gettimeofday(&tv, 0);
-  volatile double tval = tv.tv_sec + ((double)(tv.tv_usec) / 1000000.0);
-  return tval;
-}
+
 
 
 /* Prototypes */
 void myInterrupt(void);
 void gpio_config_initialize(void);
+double time_get_precision(void);
 
 
 
@@ -173,7 +172,7 @@ int init_all(void) {
   }
 
   printf("initializing...\n");
-  if (init_wiring())
+  if (gpio_init_wiring())
   {
     printf("Something went wrong with the port initialization\n");
     return 1;
@@ -198,7 +197,7 @@ void gpio_config_initialize(void) {
 }
 
 
-int init_wiring(void) {
+int gpio_init_wiring(void) {
   if (wiringPiSetup () < 0) {
     fprintf (stderr, "Unable to setup wiringPi: %s\n", strerror (errno));
     return 1;
@@ -226,4 +225,13 @@ int init_wiring(void) {
 }
 
 
+
+/*  helper functions  */
+
+double time_get_precision(void) {
+  struct timeval tv;
+  gettimeofday(&tv, 0);
+  volatile double tval = tv.tv_sec + ((double)(tv.tv_usec) / 1000000.0);
+  return tval;
+}
 
