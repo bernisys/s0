@@ -14,6 +14,6 @@ $(PROG): $(OBJ) main.c
 	gcc $(LDFLAGS) -o $(PROG) $(OBJ)
 
 
-%.o: %.c
+%.o: %.c %.h
 	gcc -c $<
 
