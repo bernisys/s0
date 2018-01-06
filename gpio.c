@@ -12,6 +12,7 @@
 
 
 #include "gpio.h"
+#include "time.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -47,7 +48,7 @@ int gpio_config_read (char* filename) {
   unsigned int pulses_per_kwh = 0;
 
   int return_value;
-  while(return_value = fscanf(ptr_file, "%d,%d,%d\n", &gpio, &pin, &pulses_per_kwh) != EOF) {
+  while((return_value = fscanf(ptr_file, "%d,%d,%d\n", &gpio, &pin, &pulses_per_kwh)) != EOF) {
     #ifdef DEBUGGING
     printf("%d / ", return_value);
     #endif

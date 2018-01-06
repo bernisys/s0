@@ -22,5 +22,5 @@ $(PROG): $(OBJ)
 
 
 %.o: %.c %.h
-	gcc -c $<
+	gcc -c $(CFLAGS) $<
 
