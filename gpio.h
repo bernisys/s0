@@ -10,15 +10,11 @@
  ***********************************************************************
  */
 
-#ifndef _s0_h
-#define _s0_h
+#ifndef _gpio_h
+#define _gpio_h
 
 //#define DEBUGGING
 
-
-/******************************
- *  specific datatypes
- */
 typedef struct {
   // GPIO related values
   unsigned char wiringPi_number;
@@ -30,20 +26,18 @@ typedef struct {
   // runtime values
   unsigned long int counter;
   double energy;
-  double time_last;
-  double period_last;
+  volatile double time_last;
+  volatile double period_last;
   double power_last;
 } t_gpio_pin;
 
 
-
-/******************************
- * Prototypes
- */
-void myInterrupt(void);
+int gpio_config_read (char* filename);
 void gpio_config_initialize(void);
-double time_get_precision(void);
+int gpio_init_wiring(void);
+unsigned long int gpio_get_count_global(void);
+t_gpio_pin * gpio_get_status(unsigned int gpio);
 
 
-#endif /* #ifndef _s0_h */
+#endif /* #ifndef _gpio_h */
 

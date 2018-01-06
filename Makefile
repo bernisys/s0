@@ -2,15 +2,22 @@ PROG = s0
 CFLAGS = -Wall -g
 LDFLAGS = -lwiringPi
 
-OBJ = udp_broadcast.o s0.o
+OBJ = udp_broadcast.o time.o s0.o gpio.o
+
+SRC = $(OBJ:%.o=%.c)
+HDR = $(OBJ:%.o=%.h)
+
+
+
 
 all: $(OBJ) $(PROG)
 
 
 clean:
-	rm -f s0 *.o
+	rm -f $(PROG) $(OBJ)
 
-$(PROG): $(OBJ) main.c
+
+$(PROG): $(OBJ)
 	gcc $(LDFLAGS) -o $(PROG) $(OBJ)
 
 
