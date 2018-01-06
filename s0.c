@@ -66,23 +66,18 @@ int main (void) {
     count = gpio_get_count_global();
 
     char outstr[500] = {0};
+
     unsigned char gpio;
-
-    // TESTING //
-    volatile double now = time_get_precision();
-    printf("now: %f\n", now);
-
-
     for (gpio = 0; gpio < 8 ; gpio++) {
       t_gpio_pin *current = gpio_get_status(gpio);
-      // printf("GPIO.%d -> C=%lu  E=%e  TL=%e  dT=%e  PL=%e\n", gpio, current->counter, current->energy, current->time_last, current->period_last, current->power_last);
       char countstr[30];
       snprintf(countstr, 29, " %9.3fkWh", (float)(current->counter) / (float)(current->pulses_per_kwh));
       strcat(outstr, countstr);
       snprintf(countstr, 29, " %5luW", (unsigned long int)(current->power_last * 1000));
       strcat(outstr, countstr);
     }
-    printf("%s\n", outstr);
+    volatile double now = time_get_precision();
+    printf("%f %s\n", now, outstr);
   }
 
   return 0;

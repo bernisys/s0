@@ -10,8 +10,6 @@
 #include "time.h"
 #include <sys/time.h>
 
-#define DEBUGGING
-
 #include <stdio.h>
 
 volatile double time_get_precision(void) {

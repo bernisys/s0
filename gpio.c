@@ -71,7 +71,6 @@ void myInterrupt(void) {
   // retrieve current time for all operations iduring this IRQ
   volatile double now = time_get_precision();
   ++count_global;
-  printf("now=%f\n", now);
 
   #ifdef DEBUGGING
   printf("%f INT:", now);
@@ -87,8 +86,8 @@ void myInterrupt(void) {
     #endif
     if ((state == 1) && (current->state_last == 0)) {
       // update last timestamp
-      current->period_last = (volatile)(now - current->time_last);
-      current->time_last = (volatile)now;
+      current->period_last = (now - current->time_last);
+      current->time_last = now;
 
       // update all readings
       current->counter++;
@@ -129,7 +128,7 @@ int gpio_init_wiring(void) {
     return 1;
   }
 
-  char gpio;
+  unsigned char gpio;
   for (gpio = 0; gpio < 8 ; gpio++) {
     t_gpio_pin *current = &gpio_pins[gpio];
     unsigned int number = current->wiringPi_number;
