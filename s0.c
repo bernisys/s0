@@ -22,7 +22,9 @@
 
 
 
-/*  specific datatypes  */
+/******************************
+ *  specific datatypes
+ */
 typedef struct {
   // GPIO related values
   unsigned char wiringPi_number;
@@ -41,7 +43,9 @@ typedef struct {
 
 
 
-
+/******************************
+ *  global variables
+ */
 t_gpio_pin gpio_pins[8];
 unsigned long int count_clobal = 0;
 
@@ -49,7 +53,9 @@ unsigned long int count_clobal = 0;
 
 
 
-/* Prototypes */
+/******************************
+ * Prototypes
+ */
 void myInterrupt(void);
 void gpio_config_initialize(void);
 double time_get_precision(void);
@@ -58,7 +64,9 @@ double time_get_precision(void);
 
 
 
-/*  main function  */
+/******************************
+ *  main function
+ */
 int main (void) {
   if (init_all())
     return 1;
@@ -101,13 +109,13 @@ int gpio_config_read (char* filename) {
 
   int return_value;
   while(return_value = fscanf(ptr_file, "%d,%d,%d\n", &gpio, &pin, &pulses_per_kwh) != EOF) {
-#ifdef DEBUGGING
+    #ifdef DEBUGGING
     printf("%d / ", return_value);
-#endif
+    #endif
     if (gpio < 8) {
-#ifdef DEBUGGING
+      #ifdef DEBUGGING
       printf("GPIO.%d is #%d with %d/kWh\n", gpio, pin, pulses_per_kwh);
-#endif
+      #endif
       gpio_pins[gpio].wiringPi_number = pin;
       gpio_pins[gpio].pulses_per_kwh = pulses_per_kwh;
     }
@@ -162,7 +170,9 @@ void myInterrupt(void) {
 
 
 
-/* Initialization routines */
+/******************************
+ * Initialization routines
+ */
 
 int init_all(void) {
   gpio_config_initialize();
@@ -208,9 +218,9 @@ int gpio_init_wiring(void) {
     t_gpio_pin *current = &gpio_pins[gpio];
     unsigned int number = current->wiringPi_number;
     if (number != 255) {
-#ifdef DEBUGGING
+      #ifdef DEBUGGING
       printf("set GPIO.%d to pin %d\n", gpio, number);
-#endif
+      #endif
       pinMode(number, INPUT);
       pullUpDnControl(number, PUD_DOWN);
       if (wiringPiISR (number, INT_EDGE_BOTH, &myInterrupt) < 0) {
@@ -226,7 +236,9 @@ int gpio_init_wiring(void) {
 
 
 
-/*  helper functions  */
+/******************************
+ *  helper functions
+ */
 
 double time_get_precision(void) {
   struct timeval tv;
