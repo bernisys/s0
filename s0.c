@@ -51,50 +51,42 @@ double time_get_precision(void) {
 }
 
 
-void myInterrupt (void) {
-  // retrieve current time for all operations iduring this IRQ
-  double now = time_get_precision();
-  ++count_clobal;
+/* Prototypes */
+void myInterrupt(void);
+void gpio_config_initialize(void);
 
-  #ifdef DEBUGGING
-  printf("%f INT:", now);
-  #endif
 
-  // check which GPIO pins triggered an interrupt on rising edge
-  unsigned char gpio;
-  for (gpio = 0; gpio < 8 ; gpio++) {
-    t_gpio_pin *current = &gpio_pins[gpio];
-    int state = digitalRead(current->wiringPi_number);
-    #ifdef DEBUGGING
-    printf(" G.%d=%d", gpio, state); 
-    #endif
-    if ((state == 1) && (current->state_last == 0)) {
-      // update last timestamp
-      current->period_last = (now - current->time_last);
-      current->time_last = now;
 
-      // update all readings
-      current->counter++;
-      current->energy = 1.0 * current->counter / current->pulses_per_kwh;
-      current->power_last = 3600.0 / (current->period_last * current->pulses_per_kwh);
 
-      #ifdef DEBUGGING
-      printf("  E=%f  dT=%f  P=%f\n", current->energy, current->period_last, current->power_last*1000);
-      #endif
+
+/*  main function  */
+int main (void) {
+  if (init_all())
+    return 1;
+
+  static long int count = 0;
+  for (;;) {
+    while (count == count_clobal)
+      delay (100);
+
+    count = count_clobal;
+
+    char outstr[500] = {0};
+    char gpio;
+    for (gpio = 0; gpio < 8 ; gpio++) {
+      t_gpio_pin *current = &gpio_pins[gpio];
+      char countstr[30];
+      snprintf(countstr, 29, " %9.3fkWh", (float)(current->counter) / (float)(current->pulses_per_kwh));
+      strcat(outstr, countstr);
+      snprintf(countstr, 29, " %5uW", (unsigned long int)(current->power_last * 1000));
+      strcat(outstr, countstr);
     }
-/*
-    else if (state == current->state_last) {
-      double delta_time = (now - current->time_last);
-      if (delta_time > 0.5)
-        current->power_last = 3600.0 / (delta_time * current->pulses_per_kwh);
-    }
-*/
-    current->state_last = state;
+    printf("%s\n", outstr);
   }
-#ifdef DEBUGGING
-  printf("\n"); 
-#endif
+
+  return 0;
 }
+
 
 
 int gpio_config_read (char* filename) {
@@ -125,7 +117,88 @@ int gpio_config_read (char* filename) {
 }
 
 
-int init (void) {
+
+
+
+
+
+
+void myInterrupt(void) {
+  // retrieve current time for all operations iduring this IRQ
+  double now = time_get_precision();
+  ++count_clobal;
+
+  #ifdef DEBUGGING
+  printf("%f INT:", now);
+  #endif
+
+  // check which GPIO pins triggered an interrupt on rising edge
+  unsigned char gpio;
+  for (gpio = 0; gpio < 8 ; gpio++) {
+    t_gpio_pin *current = &gpio_pins[gpio];
+    int state = digitalRead(current->wiringPi_number);
+    #ifdef DEBUGGING
+    printf(" G.%d=%d", gpio, state); 
+    #endif
+    if ((state == 1) && (current->state_last == 0)) {
+      // update last timestamp
+      current->period_last = (now - current->time_last);
+      current->time_last = now;
+
+      // update all readings
+      current->counter++;
+      current->energy = 1.0 * current->counter / current->pulses_per_kwh;
+      current->power_last = 3600.0 / (current->period_last * current->pulses_per_kwh);
+
+      #ifdef DEBUGGING
+      printf("  E=%f  dT=%f  P=%f\n", current->energy, current->period_last, current->power_last*1000);
+      #endif
+    }
+    current->state_last = state;
+  }
+#ifdef DEBUGGING
+  printf("\n"); 
+#endif
+}
+
+
+
+/* Initialization routines */
+
+int init_all(void) {
+  gpio_config_initialize();
+  if (gpio_config_read("s0.ini")) {
+    printf("Something went wrong with the configuration file: \"s0.ini\"\n");
+    return 1;
+  }
+
+  printf("initializing...\n");
+  if (init_wiring())
+  {
+    printf("Something went wrong with the port initialization\n");
+    return 1;
+  }
+
+  printf("done.\n");
+}
+
+
+void gpio_config_initialize(void) {
+  unsigned char gpio;
+  for(gpio = 0; gpio < 8 ; gpio++) {
+    t_gpio_pin *current = &gpio_pins[gpio];
+    current->wiringPi_number = 255;
+    current->state_last = 0;
+    current->pulses_per_kwh = 0;
+
+    current->counter = 0;
+    current->power_last = 0;
+    current->time_last = 0;
+  }
+}
+
+
+int init_wiring(void) {
   if (wiringPiSetup () < 0) {
     fprintf (stderr, "Unable to setup wiringPi: %s\n", strerror (errno));
     return 1;
@@ -153,58 +226,4 @@ int init (void) {
 }
 
 
-void gpio_config_initialize(void) {
-  unsigned char gpio;
-  for(gpio = 0; gpio < 8 ; gpio++) {
-    t_gpio_pin *current = &gpio_pins[gpio];
-    current->wiringPi_number = 255;
-    current->state_last = 0;
-    current->pulses_per_kwh = 0;
-
-    current->counter = 0;
-    current->power_last = 0;
-    current->time_last = 0;
-  }
-}
-
-
-int main (void)
-{
-  gpio_config_initialize();
-  if (gpio_config_read("s0.ini")) {
-    printf("Something went wrong with the configuration file: \"s0.ini\"\n");
-    return 1;
-  }
-
-  printf("initializing...\n");
-  if (init())
-  {
-    printf("Something went wrong with the port initialization\n");
-    return 1;
-  }
-
-  printf("done.\n");
-
-  static long int count = 0;
-  for (;;) {
-    while (count == count_clobal)
-      delay (100);
-
-    count = count_clobal;
-
-    char outstr[500] = {0};
-    char gpio;
-    for (gpio = 0; gpio < 8 ; gpio++) {
-      t_gpio_pin *current = &gpio_pins[gpio];
-      char countstr[30];
-      snprintf(countstr, 29, " %9.3fkWh", (float)(current->counter) / (float)(current->pulses_per_kwh));
-      strcat(outstr, countstr);
-      snprintf(countstr, 29, " %5uW", (unsigned long int)(current->power_last * 1000));
-      strcat(outstr, countstr);
-    }
-    printf("%s\n", outstr);
-  }
-
-  return 0;
-}
 
