@@ -14,34 +14,36 @@
 #define _gpio_h
 
 //#define DEBUGGING
+#define GPIO_PIN_COUNT 8
 
 typedef struct {
-  // GPIO related values
   unsigned char wiringPi_number;
   unsigned char state_last;
-
-  // power meter related values
-  unsigned int pulses_per_kwh;  // translation factor pulses <-> kWh
-
-  // runtime values
   unsigned long int counter;
-  double energy;
   volatile double time_last;
   volatile double period_last;
-  double power_last;
   unsigned char changed;
 } t_gpio_pin;
 
 
-int gpio_config_read (char* filename);
-int gpio_last_values_read (char* filename);
+/******************************
+ *  initialization functions and setters
+ */
 void gpio_config_initialize(void);
+int gpio_pin_set_wiring(unsigned char gpio, unsigned char pin_routing);
+int gpio_pin_set_values(unsigned char gpio, unsigned long int counter, double time_last, double period_last);
 int gpio_init_wiring(void);
 
-unsigned long int gpio_get_count_global(void);
-unsigned char gpio_get_changed_global(void);
-t_gpio_pin * gpio_get_status(unsigned int gpio);
-void gpio_get_entry_string(unsigned char gpio, char * outstr, unsigned int length, unsigned char type);
+/******************************
+ *  getters
+ */
+unsigned char gpio_global_get_changed(void);
+unsigned long int gpio_global_get_counter(void);
+
+unsigned long int gpio_pin_get_counter(unsigned char gpio);
+double gpio_pin_get_time_last(unsigned char gpio);
+double gpio_pin_get_period_last(unsigned char gpio);
+unsigned char gpio_pin_get_changed(unsigned char gpio);
 
 #endif /* #ifndef _gpio_h */
 

@@ -1,11 +1,7 @@
 /*
  * s0.c:
- * Wait for Interrupts on all GPIOs, increase counters accodringly
  *
- * Test:
- * gpio mode 0 up ; gpio mode 0 down
- *
- * Uses wiringPi: https://projects.drogon.net/raspberry-pi/wiringpi/
+ * handles the S0 impulse output values of power meters
  *
  ***********************************************************************
  */
@@ -35,6 +31,9 @@ void output_all(void);
 
 #define FILENAME "/var/run/s0.last"
 
+#define GPIO_COUNT 8
+unsigned int pulses[GPIO_COUNT];
+unsigned char wiringPi_number[GPIO_COUNT];
 
 
 /******************************
@@ -77,6 +76,28 @@ int init_all(void) {
 }
 
 
+
+
+
+/******************************
+ *  calculations
+ */
+double s0_get_energy(unsigned char gpio) {
+  unsigned long int counter = gpio_pin_get_counter(gpio);
+  double energy = (double)counter / pulses[gpio];
+  return energy;
+}
+
+double s0_get_power(unsigned char gpio) {
+  double period = gpio_pin_get_period_last(gpio);
+  double power = 0;
+  if (period != 0)
+    power = 3600.0 / (period * pulses[gpio]);
+  return power;
+}
+
+
+
 /******************************
  *  main function
  */
@@ -86,35 +107,45 @@ int main (void) {
 
   static long int count = 0;
   for (;;) {
-    while (count == gpio_get_count_global())
+    while (count == gpio_global_get_counter())
       delay (100);
 
-    count = gpio_get_count_global();
-    char outstr_udp[MAX_UDP_STRING] = {0};
+    count = gpio_global_get_counter();
     char outstr_cli[MAX_CLI_STRING] = {0};
 
     FILE *fh = fopen(FILENAME".new", "w");
 
     double now = time_get_precision();
-    printf("%0.3lf", now);
+    snprintf(outstr_cli, MAX_CLI_STRING-1, "%0.3lf", now);
+
     unsigned char gpio;
-    for (gpio = 0; gpio < 8 ; gpio++) {
-      t_gpio_pin *current = gpio_get_status(gpio);
-      printf(" %9.3fkWh %5luW", (float)(current->counter) / (float)(current->pulses_per_kwh), (unsigned long int)(current->power_last * 1000));
+    for (gpio = 0; gpio < GPIO_COUNT ; gpio++) {
+      // TODO: retrieve pulses config!
+
+      double energy = s0_get_energy(gpio);
+      double power = s0_get_power(gpio);
+
+      char tempstr[32];
+      snprintf(tempstr, 30, " %9.3lfkWh %5.0lfW", energy, power * 1000);
+      strncat(outstr_cli, tempstr, MAX_CLI_STRING-1);
 
       // write last state into file (use a ramdisk location!)
-      gpio_get_entry_string(gpio, outstr_udp, MAX_UDP_STRING-1, 0);
-      fprintf(fh, "%s\n", outstr_udp);
+      char outstr[MAX_UDP_STRING] = {0};
+      gpio_get_entry_string(gpio, outstr, MAX_UDP_STRING-1, 0);
+      fprintf(fh, "%s\n", outstr);
 
-      if (current->changed != 0) {
-        current->changed = 0;
-        snprintf(outstr_udp, MAX_UDP_STRING-1, "%f: %d %lf %0.3lf", current->time_last, gpio, current->energy, current->power_last);
-        sendBroadcastPacket("10.11.8.255", 22222, outstr_udp);
+      unsigned char changed = gpio_pin_get_changed(gpio);
+      if (changed != 0) {
+        changed = 0;
+        double time_last = gpio_pin_get_time_last(gpio);
+        snprintf(outstr, MAX_UDP_STRING-1, "%f: %d %lf %0.3lf", time_last, gpio, energy, power);
+        sendBroadcastPacket("10.11.8.255", 22222, outstr);
       }
     }
-    printf("\n");
     fclose(fh);
     rename(FILENAME".new", FILENAME);
+
+    printf("%s\n", outstr_cli);
   }
 
   return 0;
@@ -124,10 +155,93 @@ int main (void) {
 void output_all(void) {
   printf("all values:\n");
   unsigned char gpio;
-  for (gpio = 0; gpio < 8 ; gpio++) {
+  for (gpio = 0; gpio < GPIO_COUNT ; gpio++) {
     char outstr_cli[MAX_CLI_STRING];
     gpio_get_entry_string(gpio, outstr_cli, MAX_CLI_STRING-1, 1);
     printf("%s\n", outstr_cli);
   }
 }
+
+
+int gpio_config_read (char* filename) {
+  FILE *ptr_file = 0;
+
+  ptr_file = fopen(filename, "r");
+  if (! ptr_file)
+    return 1;
+
+  unsigned int gpio = 0;
+  unsigned int pin = 0;
+  unsigned int pulses_per_kwh = 0;
+
+  int return_value;
+  while((return_value = fscanf(ptr_file, "%d,%d,%d\n", &gpio, &pin, &pulses_per_kwh)) != EOF) {
+    #ifdef DEBUGGING
+    printf("%d / ", return_value);
+    #endif
+    if (gpio < GPIO_COUNT) {
+      #ifdef DEBUGGING
+      printf("GPIO.%u is #%u with %u/kWh\n", gpio, pin, pulses_per_kwh);
+      #endif
+      gpio_pin_set_wiring(gpio, pin);
+      wiringPi_number[gpio] = pin;
+      pulses[gpio] = pulses_per_kwh;
+    }
+  }
+  return 0;
+}
+
+int gpio_last_values_read (char* filename) {
+  FILE *ptr_file = 0;
+
+  ptr_file = fopen(filename, "r");
+  if (! ptr_file)
+    return 1;
+
+  unsigned int gpio = 0;
+  unsigned long int counter;
+  double time_last;
+  double period_last;
+
+  int return_value;
+  while((return_value = fscanf(ptr_file, "%u: %lu %lf %lf", &gpio, &counter, &time_last, &period_last)) != EOF) {
+    #ifdef DEBUGGING
+    printf("%d / ", return_value);
+    #endif
+    if (gpio < GPIO_COUNT) {
+      #ifdef DEBUGGING
+      printf("GPIO.%d last values: C=%lu T=%lf P=%f\n", gpio, counter, time_last, period_last);
+      #endif
+      gpio_pin_set_values(gpio, counter, time_last, period_last);
+    }
+  }
+  return 0;
+}
+
+
+void gpio_get_entry_string(unsigned char gpio, char * outstr, unsigned int length, unsigned char type) {
+  if (gpio < GPIO_COUNT) {
+    unsigned long int counter = gpio_pin_get_counter(gpio);
+    double time_last = gpio_pin_get_time_last(gpio);
+    double period_last = gpio_pin_get_period_last(gpio);
+
+    if (type == 0)
+      snprintf(outstr, length, "%u: %lu %lf %lf", gpio, counter, time_last, period_last);
+    else {
+      double energy = s0_get_energy(gpio);
+      double power_last = s0_get_power(gpio);
+      snprintf(outstr, length, "%u: %u %u | %lu | %lf %lf = %lf %lf",
+        gpio,
+        wiringPi_number[gpio],
+        pulses[gpio],
+        counter,
+        time_last,
+        period_last,
+        energy,
+        power_last
+      );
+    }
+  }
+}
+
 
