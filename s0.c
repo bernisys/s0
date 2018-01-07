@@ -22,18 +22,22 @@
 //#define DEBUGGING
 
 
-void output_all(void);
-
-
 #define MAX_UDP_STRING 100
 #define MAX_CLI_STRING 400
 
-
 #define FILENAME "/var/run/s0.last"
+#define FILENAME_INI "s0.ini"
 
 #define GPIO_COUNT 8
+
 unsigned int pulses[GPIO_COUNT];
 unsigned char wiringPi_number[GPIO_COUNT];
+
+
+
+void gpio_get_entry_string(unsigned char gpio, char * outstr, unsigned int length, unsigned char type);
+int gpio_config_read (char* filename);
+int gpio_last_values_read (char* filename);
 
 
 /******************************
@@ -43,22 +47,16 @@ unsigned char wiringPi_number[GPIO_COUNT];
 int init_all(void) {
   gpio_config_initialize();
 
-  if (gpio_config_read("s0.ini")) {
-    printf("Something went wrong with the configuration file: \"s0.ini\"\n");
+  if (gpio_config_read(FILENAME_INI)) {
+    printf("Something went wrong with the configuration file: \""FILENAME_INI"\"\n");
     return 1;
   }
-  #ifdef DEBUGGING
-  output_all();
-  #endif
 
   printf("initializing...\n");
   if (gpio_last_values_read (FILENAME))
   {
     printf("Could not read last values.\n");
   }
-  #ifdef DEBUGGING
-  output_all();
-  #endif
 
 
   if (gpio_init_wiring())
@@ -66,10 +64,6 @@ int init_all(void) {
     printf("Something went wrong with the port initialization\n");
     return 1;
   }
-  #ifdef DEBUGGING
-  output_all();
-  #endif
-
 
   printf("done.\n");
   return 0;
@@ -152,17 +146,6 @@ int main (void) {
 }
 
 
-void output_all(void) {
-  printf("all values:\n");
-  unsigned char gpio;
-  for (gpio = 0; gpio < GPIO_COUNT ; gpio++) {
-    char outstr_cli[MAX_CLI_STRING];
-    gpio_get_entry_string(gpio, outstr_cli, MAX_CLI_STRING-1, 1);
-    printf("%s\n", outstr_cli);
-  }
-}
-
-
 int gpio_config_read (char* filename) {
   FILE *ptr_file = 0;
 
@@ -190,6 +173,7 @@ int gpio_config_read (char* filename) {
   }
   return 0;
 }
+
 
 int gpio_last_values_read (char* filename) {
   FILE *ptr_file = 0;
@@ -230,16 +214,7 @@ void gpio_get_entry_string(unsigned char gpio, char * outstr, unsigned int lengt
     else {
       double energy = s0_get_energy(gpio);
       double power_last = s0_get_power(gpio);
-      snprintf(outstr, length, "%u: %u %u | %lu | %lf %lf = %lf %lf",
-        gpio,
-        wiringPi_number[gpio],
-        pulses[gpio],
-        counter,
-        time_last,
-        period_last,
-        energy,
-        power_last
-      );
+      snprintf(outstr, length, "%u: %u %u | %lu | %lf %lf = %lf %lf", gpio, wiringPi_number[gpio], pulses[gpio], counter, time_last, period_last, energy, power_last);
     }
   }
 }
