@@ -17,6 +17,9 @@ clean:
 	rm -f $(PROG) $(OBJ)
 
 
+fresh: clean all
+
+
 $(PROG): $(OBJ)
 	gcc $(LDFLAGS) -o $(PROG) $(OBJ)
 
