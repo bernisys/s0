@@ -41,7 +41,7 @@ while ($sock->recv($newmsg, $MAXLEN)) {
 
     print "$newmsg\n";
 
-    open(my $h_file, '>', 'data/PWR-'.$date);
+    open(my $h_file, '>>', 'data/PWR-'.$date);
     print $h_file "$newmsg\n";
     close $h_file;
 
