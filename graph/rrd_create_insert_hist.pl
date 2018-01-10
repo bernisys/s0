@@ -37,14 +37,15 @@ my @times  = (0, 0, 0, 0, 0, 0, 0, 0);
 my @values = (0, 0, 0, 0, 0, 0, 0, 0);
 my %val;
 
+my @add = (33303.614, 8314.584, 18581.567, 4697.353);
+
 opendir(my $h_dir, "data");
 my @files = grep /^PWR.*\d$/, sort readdir $h_dir;
 closedir $h_dir;
 
-print join("\n", @files,"");
-
 foreach my $file (@files)
 {
+  # print "processing $file\n";
 
   open(my $h_file, '<', 'data/'.$file);
   foreach my $line (<$h_file>)
@@ -61,6 +62,7 @@ foreach my $file (@files)
         #printf("%d: %d=%f\n", $time, $num, $kwh);
         foreach (my $n = 0; $n < 4 ; $n++)
         {
+          $values[$n] += $add[$n] if ($values[$n] < $add[$n]);
           $val{$time}{'S0_'.$n}{'kWh'} = $values[$n];
         }
         $times[$num] = $time;
@@ -70,8 +72,14 @@ foreach my $file (@files)
   close $h_file;
 }
 
+my $now = 0;
 foreach my $time (sort keys %val)
 {
+  if (($now + 10) < time)
+  {
+    # printf("update: %d (%d / %d to go)\r", $time, time, (time - $time));
+    $now = time;
+  }
   if ($time > $last)
   {
     BPrrd::feed_all('./rrds/', $val{$time}, $time);
