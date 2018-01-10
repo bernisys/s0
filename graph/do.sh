@@ -1,7 +1,7 @@
 #!/bin/bash
 
 mkdir -p log
-NUM=$(ps -aux | grep "\.\/rrd_create_insert_hist\.pl")
+NUM=$(ps -aux | grep -c "\.\/rrd_create_insert_hist\.pl")
 if [ $NUM = 0 ] ; then
   ./rrd_create_insert_hist.pl
 fi
