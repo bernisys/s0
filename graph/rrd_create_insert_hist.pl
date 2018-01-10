@@ -37,28 +37,38 @@ my @times  = (0, 0, 0, 0, 0, 0, 0, 0);
 my @values = (0, 0, 0, 0, 0, 0, 0, 0);
 my %val;
 
-open(my $h_file, '<', 'PWR.dat');
-foreach my $line (<$h_file>)
-{
-  if ($line =~ /(\d+)\.\d+: (\d) ([\d\.]+)/)
-  # 1515296647.994384: 0 4.736000 0.822
-  {
-    my ($time, $num, $kwh) = ($1, $2, $3);
-    $values[$num] = $kwh;
-    next if $time < $last;
+opendir(my $h_dir, "data");
+my @files = grep /^PWR.*\d$/, sort readdir $h_dir;
+closedir $h_dir;
 
-    if ($time > $times[$num])
+print join("\n", @files,"");
+
+foreach my $file (@files)
+{
+
+  open(my $h_file, '<', 'data/'.$file);
+  foreach my $line (<$h_file>)
+  {
+    if ($line =~ /(\d+)\.\d+: (\d) ([\d\.]+)/)
+    # 1515296647.994384: 0 4.736000 0.822
     {
-      #printf("%d: %d=%f\n", $time, $num, $kwh);
-      foreach (my $n = 0; $n < 4 ; $n++)
+      my ($time, $num, $kwh) = ($1, $2, $3);
+      $values[$num] = $kwh;
+      next if $time < $last;
+
+      if ($time > $times[$num])
       {
-        $val{$time}{'S0_'.$n}{'kWh'} = $values[$n];
+        #printf("%d: %d=%f\n", $time, $num, $kwh);
+        foreach (my $n = 0; $n < 4 ; $n++)
+        {
+          $val{$time}{'S0_'.$n}{'kWh'} = $values[$n];
+        }
+        $times[$num] = $time;
       }
-      $times[$num] = $time;
     }
   }
+  close $h_file;
 }
-close $h_file;
 
 foreach my $time (sort keys %val)
 {

@@ -4,8 +4,8 @@ for GPIO in 0 1 2 3 ; do
 
   rrdtool graph "S0_"$GPIO"_1h.png" \
     --start -1h \
-    --width 800 \
-    --height 300 \
+    --width 600 \
+    --height 200 \
     --lazy \
     --slope-mode \
     --alt-autoscale \
@@ -32,8 +32,8 @@ for GPIO in 0 1 2 3 ; do
 
     rrdtool graph S0_"$GPIO"_$TIMEFRAME.png \
       --start -$START \
-      --width 800 \
-      --height 300 \
+      --width 600 \
+      --height 200 \
       --lazy \
       --slope-mode \
       --alt-autoscale \
