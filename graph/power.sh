@@ -145,22 +145,22 @@ for TIME in 1h:1h 6h:6h 1d:day 1w:week 1m:month 1y:year ; do
     VDEF:w_3_max=w_3,MAXIMUM \
     TEXTALIGN:left \
     COMMENT:"      Minimum   Average   Maximum\n" \
-    AREA:"w_0#ff0000:W" \
+    AREA:"w_0#ffff00:W KGG" \
     GPRINT:w_0_min:"%6.2lf%S" \
     GPRINT:w_0_avg:"%6.2lf%S" \
     GPRINT:w_0_max:"%6.2lf%S" \
     COMMENT:"\n" \
-    STACK:"w_1#00ff00:W" \
+    STACK:"w_1#ff0000:W  OG" \
     GPRINT:w_1_min:"%6.2lf%S" \
     GPRINT:w_1_avg:"%6.2lf%S" \
     GPRINT:w_1_max:"%6.2lf%S" \
     COMMENT:"\n" \
-    STACK:"w_2#0000ff:W" \
+    STACK:"w_2#00ff00:W EGH" \
     GPRINT:w_2_min:"%6.2lf%S" \
     GPRINT:w_2_avg:"%6.2lf%S" \
     GPRINT:w_2_max:"%6.2lf%S" \
     COMMENT:"\n" \
-    STACK:"w_3#ffff00:W" \
+    STACK:"w_3#0000ff:W EGV" \
     GPRINT:w_3_min:"%6.2lf%S" \
     GPRINT:w_3_avg:"%6.2lf%S" \
     GPRINT:w_3_max:"%6.2lf%S" \

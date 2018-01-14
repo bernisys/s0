@@ -7,3 +7,5 @@ if [ $NUM = 0 ] ; then
 fi
 ./graph.pl > log/graph.log
 ./power.sh >> log/graph.log
+./energy_all.sh >> log/graph.log
+
