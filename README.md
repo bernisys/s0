@@ -38,5 +38,13 @@ LAST=/var/run/s0.last
 SAVE=/var/cache/s0.last
 ```
 
+## starting/stopping
+A start/stop script is already shipped with the project: s0.sh
+
+It takes care about starting/killing the binary as well as syncing the data to and from the reboot-safe location.
+
+Even if the counters should be automatically saved and restored by the script, it makes sense though, to use a cron job to periodically sync the counters in RAM to the disk, so that the values are not completely lost in case the Pi crashes. To save your memory card's life-span it's recommended to do this either daily or if needed hourly. (8760 writes/year if done hourly - an SD card should survive this for several years, if it's a reliable one. You will probably find lots of articles & tests about this topic online.)
+
+
 ## remote part
 (TODO)
