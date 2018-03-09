@@ -139,7 +139,9 @@ int main (void) {
     fclose(fh);
     rename(FILENAME".new", FILENAME);
 
+    #ifdef DEBUGGING
     printf("%s\n", outstr_cli);
+    #endif
   }
 
   return 0;
