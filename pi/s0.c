@@ -153,24 +153,39 @@ int gpio_config_read (char* filename) {
   if (! ptr_file)
     return 1;
 
-  unsigned int gpio = 0;
-  unsigned int pin = 0;
-  unsigned int pulses_per_kwh = 0;
+  int return_value = 0;
+  while(return_value != EOF) {
+    unsigned int gpio = 0;
+    unsigned int pin = 0;
+    unsigned int pulses_per_kwh = 0;
 
-  int return_value;
-  while((return_value = fscanf(ptr_file, "%d,%d,%d\n", &gpio, &pin, &pulses_per_kwh)) != EOF) {
+    return_value = fscanf(ptr_file, "#%d,%d,%d\n", &gpio, &pin, &pulses_per_kwh);
     #ifdef DEBUGGING
     printf("%d / ", return_value);
     #endif
-    if (gpio < GPIO_COUNT) {
-      #ifdef DEBUGGING
-      printf("GPIO.%u is #%u with %u/kWh\n", gpio, pin, pulses_per_kwh);
-      #endif
-      gpio_pin_set_wiring(gpio, pin);
-      wiringPi_number[gpio] = pin;
-      pulses[gpio] = pulses_per_kwh;
+    if (return_value > 0) {
+      if (gpio < GPIO_COUNT) {
+        #ifdef DEBUGGING
+        printf("GPIO.%u is #%u with %u/kWh\n", gpio, pin, pulses_per_kwh);
+        #endif
+        gpio_pin_set_wiring(gpio, pin);
+        wiringPi_number[gpio] = pin;
+        pulses[gpio] = pulses_per_kwh;
+      }
+    } else {
+      char * line;
+      line = malloc(1024);
+      if (line != NULL) {
+        return_value = fscanf(ptr_file, "%s\n", line);
+        free(line);
+      } else {
+        printf("ERROR: Cannot allocate RAM!\n");
+        fclose(ptr_file);
+        return -1;
+      }
     }
   }
+  fclose(ptr_file);
   return 0;
 }
 
